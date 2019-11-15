@@ -9,9 +9,21 @@ import config
 import keyboards
 from keyboards import ReplyKB, InlineKB
 from models import models
+from flask import Flask, request, abort
 
-
+app = Flask(__name__)
 bot = telebot.TeleBot(config.TOKEN)
+
+
+@app.route(config.handle_url, methods=['POST'])
+def webhook():
+    if request.headers.get('content/type') == 'application/json':
+        json_str = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_str)
+        bot.process_new_updates([update])
+        return ''
+    else:
+        abort(403)
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -86,4 +98,7 @@ def back(call):
 
 
 if __name__ == '__main__':
-    bot.polling(none_stop=True)
+    import time
+    bot.remove_webhook()
+    time.sleep(1)
+    bot.set_webhook(config.webhook_url)
